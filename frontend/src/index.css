@@ -23,6 +23,8 @@ html {
 
 body {
   margin: 0;
+  background: #4d4d4d;
+  /* background: grey; */
 }
 
 .slide-in-left-enter {
