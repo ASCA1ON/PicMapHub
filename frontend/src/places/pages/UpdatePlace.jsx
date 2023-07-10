@@ -1,11 +1,16 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Input from "../../shared/components/FormElements/Input";
 import Button from "../../shared/components/FormElements/Button";
-import { VALIDATOR_MAXLENGTH, VALIDATOR_MINLENGTH, VALIDATOR_REQUIRE } from "../../shared/util/validators";
+import {
+  VALIDATOR_MAXLENGTH,
+  VALIDATOR_MINLENGTH,
+  VALIDATOR_REQUIRE,
+} from "../../shared/util/validators";
 import { useForm } from "../../shared/hooks/form-hook";
 
 import "./PlaceForm.css";
+import Card from "../../shared/components/UIElements/Card";
 
 const dummy = [
   {
@@ -39,30 +44,65 @@ const dummy = [
 ];
 
 const UpdatePlace = () => {
+  const [loading, setloading] = useState(true);
+
   const placeId = useParams().placeId;
-  const identifiedPlace = dummy.find((p) => p.id === placeId);
-  
-  const [formState, inputHandler] =useForm({
-    title:{
-      value:identifiedPlace.title,
-      isValid:true      
+
+  const [formState, inputHandler, setFormData] = useForm(
+    {
+      title: {
+        value: "",
+        isValid: false,
+      },
+      description: {
+        value: "",
+        isValid: false,
+      },
     },
-    description:{
-      value:identifiedPlace.description,
-      isValid:true      
+    false
+  );
+
+  const identifiedPlace = dummy.find((p) => p.id === placeId);
+
+  useEffect(() => {
+    if (identifiedPlace) {
+      setFormData(
+        {
+          title: {
+            value: identifiedPlace.title,
+            isValid: true,
+          },
+          description: {
+            value: identifiedPlace.description,
+            isValid: true,
+          },
+        },
+        true
+      );
+      setloading(false);
     }
-  },true)
-  
-  
-    const updatePlaceSubmitHandler = event =>{
-      event.preventDefault();
-      console.log(formState.inputs);
-    }
+  }, [setFormData, identifiedPlace]);
+
+  const updatePlaceSubmitHandler = (event) => {
+    event.preventDefault();
+    console.log(formState.inputs);
+  };
 
   if (!identifiedPlace) {
     return (
       <div className="center">
-        <h2>Could not find place!</h2>
+        <Card>
+          <h2>Could not find place!</h2>
+        </Card>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="center">
+        <Card>
+        <h2>Loding...</h2>
+        </Card>
       </div>
     );
   }
@@ -76,21 +116,23 @@ const UpdatePlace = () => {
         label="Title"
         validators={[VALIDATOR_REQUIRE()]}
         errorText="Please enter valid title (title cannot be empty)"
-        onInput = {inputHandler}
-        initialValue = {formState.inputs.title.value}
+        onInput={inputHandler}
+        initialValue={formState.inputs.title.value}
         initialValid={formState.inputs.title.isValid}
-        />
+      />
       <Input
         id="description"
         element="textarea"
         label="Description"
         validators={[VALIDATOR_MINLENGTH(5), VALIDATOR_MAXLENGTH(5000)]}
         errorText="Please enter valid description"
-        onInput = {inputHandler}
-        initialValue = {formState.inputs.description.value}
+        onInput={inputHandler}
+        initialValue={formState.inputs.description.value}
         initialValid={formState.inputs.description.isValid}
       />
-      <Button type="submit" disabled={!formState.isValid}>Update place</Button>
+      <Button type="submit" disabled={!formState.isValid}>
+        Update place
+      </Button>
     </form>
   );
 };

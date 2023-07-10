@@ -2,7 +2,8 @@ import React from "react";
 import {useParams} from 'react-router-dom'
 import PlaceList from "../components/PlaceList";
 
-const dummy = [
+const dummy1 = []
+const dummy= [
   {
     id: "p1",
     title: "Fushimi Inari-taisha",
