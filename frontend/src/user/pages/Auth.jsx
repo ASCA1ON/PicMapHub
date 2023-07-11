@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-
-
-import './Auth.css';
 import Input from '../../shared/components/FormElements/Input';
 import { VALIDATOR_EMAIL, VALIDATOR_MINLENGTH, VALIDATOR_REQUIRE, } from '../../shared/util/validators';
 import Button from '../../shared/components/FormElements/Button';
 import Card from '../../shared/components/UIElements/Card';
 import { useForm } from '../../shared/hooks/form-hook';
+
+import './Auth.css';
 
 const Auth = () => {
 
