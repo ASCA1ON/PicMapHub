@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Card from "../../shared/components/UIElements/Card";
 import Button from "../../shared/components/FormElements/Button";
 import Modal from "../../shared/components/UIElements/Modal";
 import Map from "../../shared/components/UIElements/Map";
 
+import { AuthContext } from "../../shared/context/auth-context";
 import "./PlaceItem.css";
 
 function PlaceItem(props) {
+  const auth = useContext(AuthContext);
   const [showMap, setShowMap] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -16,8 +18,8 @@ function PlaceItem(props) {
   const closeConfirm = () => setShowConfirm(false);
   const confirmDelete = () => {
     // setShowConfirm(false)
-    closeConfirm()
-    console.log('deleting');
+    closeConfirm();
+    console.log("deleting");
   };
 
   return (
@@ -30,21 +32,31 @@ function PlaceItem(props) {
         footer={<Button onClick={closeMap}>Close</Button>}
       >
         <div className="map-container">
-          <Map center={props.coordinates} zoom ={16}/>
+          <Map center={props.coordinates} zoom={16} />
         </div>
       </Modal>
 
       <Modal
-      show={showConfirm}
-      onCancel={closeConfirm}
-      header='Are you sure?'
-      contentClass="place-item__modal-content"
-      footerClass="place-item__modal-actions"
-      footer={<>
-      <Button inverse onClick={closeConfirm}>Cancel</Button>
-      <Button danger onClick={confirmDelete}>Delete</Button>
-      </>}>
-        <p>Do you want to delete this place? Beware it will be permanently deleted</p>
+        show={showConfirm}
+        onCancel={closeConfirm}
+        header="Are you sure?"
+        contentClass="place-item__modal-content"
+        footerClass="place-item__modal-actions"
+        footer={
+          <>
+            <Button inverse onClick={closeConfirm}>
+              Cancel
+            </Button>
+            <Button danger onClick={confirmDelete}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Do you want to delete this place? Beware it will be permanently
+          deleted
+        </p>
       </Modal>
 
       <li className="place-item">
@@ -61,8 +73,14 @@ function PlaceItem(props) {
             <Button inverse onClick={openMap}>
               view on map
             </Button>
-            <Button to={`/places/${props.id}`}>Edit</Button>
-            <Button danger onClick={openConfirm}>Delete</Button>
+            {auth.isLoggedIn && (
+              <Button to={`/places/${props.id}`}>Edit</Button>
+            )}
+            {auth.isLoggedIn && (
+              <Button danger onClick={openConfirm}>
+                Delete
+              </Button>
+            )}
           </div>
         </Card>
       </li>

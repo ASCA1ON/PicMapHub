@@ -63,14 +63,14 @@
   }
 
   .nav-links button {
-    border: 1px solid white;
-    color: white;
+    border: 1px solid black;
+    color: black;
     background: transparent;
   }
   
   .nav-links button:hover,
   .nav-links button:active {
-    background: #f8df00;
-    color: #292929;
+    background: #292929;
+    color: white;
   }
 }
