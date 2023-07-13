@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid')
 const HttpError = require("../model/http-error");
 
-const dummy = [
+let dummy = [
   {
     id: "p1",
     title: "Fushimi Inari-taisha",
@@ -38,20 +38,20 @@ const getPlaceById = (req, res) => {
     return p.id === placeId;
   });
   if (!place) {
-    throw new HttpError("Could not find a place for provided id", 404);
+    throw new HttpError("Could not find a place for provided id", 404); //!throw for sync only
   }
-  res.json({ place }); // {place} = {place:place}
+  res.json({ place }); //! {place} = {place:place}
 };
 
-const getPlaceByUserId = (req, res, next) => {
+const getPlacesByUserId = (req, res, next) => {
   const userId = req.params.uid;
-  const place = dummy.filter((p) => {
+  const places = dummy.filter((p) => {
     return p.creator === userId;
   });
-  if (!place.length) {
-    return next(new HttpError("Could not find a user for provided id", 404));
+  if (!places.length) {
+    return next(new HttpError("Could not find places for provided id", 404)); // for async & sync
   }
-  res.json({ place });
+  res.json({ places });
 };
 
 const createPlace = (req, res, next) => {
@@ -68,6 +68,43 @@ const createPlace = (req, res, next) => {
   res.status(201).json({place:createdPlace})
 };
 
+const updatePlaceById = (req,res,next)=>{
+  const placeId = req.params.pid;
+  const { title, description } = req.body;
+
+
+  const pl = dummy.find((p) => {
+    return p.id === placeId;
+  })
+  if (!pl) {
+    throw new HttpError("Could not find a place for provided id", 404);
+  }
+  const updatedPlace = {...dummy.find((p) => {
+    return p.id === placeId;
+  })}
+  const placeIndex = dummy.findIndex((p) => {
+    return p.id === placeId;
+  });
+  
+  updatedPlace.title=title
+  updatedPlace.description=description
+  dummy[placeIndex]=updatedPlace
+  res.status(200).json({place:updatedPlace})
+}
+
+const deletePlaceById = (req,res,next)=>{
+  const placeId = req.params.pid;
+  dummy = dummy.filter((p) => {
+    return p.id !== placeId;
+  });
+  // if (!place) {
+  //   throw new HttpError("Could not find a place for provided id", 404);
+  // }
+  res.status(200).json({message:'Place Deleted'})
+}
+
 exports.getPlaceById = getPlaceById;
-exports.getPlaceByUserId = getPlaceByUserId;
+exports.getPlacesByUserId = getPlacesByUserId;
 exports.createPlace = createPlace;
+exports.updatePlaceById = updatePlaceById
+exports.deletePlaceById = deletePlaceById
