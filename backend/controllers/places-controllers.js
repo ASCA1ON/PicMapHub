@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const HttpError = require("../model/http-error");
 const { validationResult } = require("express-validator");
+const getCoordFromAddress = require("./util/location");
 
 let dummy = [
   {
@@ -55,13 +56,21 @@ const getPlacesByUserId = (req, res, next) => {
   res.json({ places });
 };
 
-const createPlace = (req, res, next) => {
+const createPlace = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
-    throw new HttpError("Invalid inputs, please check again", 422);
+    return next(new HttpError("Invalid inputs, please check again", 422));
   }
 
-  const { title, description, coordinates, address, creator } = req.body;
+  const { title, description, address, creator } = req.body;
+
+  let coordinates;
+  try {
+    coordinates = await getCoordFromAddress(address);
+  } catch (error) {
+    return next(error);
+  }
+
   const createdPlace = {
     id: uuidv4(),
     title,
@@ -106,7 +115,7 @@ const updatePlaceById = (req, res, next) => {
 const deletePlaceById = (req, res, next) => {
   const placeId = req.params.pid;
 
-  if (!dummy.find(p => p.id === placeId)) {
+  if (!dummy.find((p) => p.id === placeId)) {
     throw new HttpError("Could not find a place for provided id", 404);
   }
 
