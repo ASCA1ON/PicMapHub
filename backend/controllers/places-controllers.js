@@ -1,39 +1,11 @@
+const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
-const HttpError = require("../model/http-error");
 const { validationResult } = require("express-validator");
+
+const HttpError = require("../model/http-error");
 const getCoordFromAddress = require("./util/location");
 const Place = require("../model/place");
-
-let dummy = [
-  {
-    id: "p1",
-    title: "Fushimi Inari-taisha",
-    description:
-      " head shrine of the kami Inari, located in Fushimi-ku, Kyoto, Kyoto Prefecture, Japan.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/c/c3/Kyoto_FushimiInari01.jpg",
-    address: "68 Fukakusa Yabunouchicho, Fushimi Ward, Kyoto, 612-0882, Japan",
-    location: {
-      lat: 34.967311625663136,
-      lng: 135.77265023990745,
-    },
-    creator: "u1",
-  },
-  {
-    id: "p2",
-    title: "Fushimi Inari-taisha",
-    description:
-      " head shrine of the kami Inari, located in Fushimi-ku, Kyoto, Kyoto Prefecture, Japan.",
-    imageUrl:
-      "https://dskyoto.s3.amazonaws.com/gallery/full/8514/5559/7797/08-20131216_FushimiInari_Mainspot-307.jpg",
-    address: "68 Fukakusa Yabunouchicho, Fushimi Ward, Kyoto, 612-0882, Japan",
-    location: {
-      lat: 34.9671402,
-      lng: 135.770483,
-    },
-    creator: "u1",
-  },
-];
+const User = require("../model/user");
 
 const createPlace = async (req, res, next) => {
   const error = validationResult(req);
@@ -59,8 +31,25 @@ const createPlace = async (req, res, next) => {
       "https://upload.wikimedia.org/wikipedia/commons/c/c3/Kyoto_FushimiInari01.jpg",
     creator,
   });
+
+  let user
+  try{
+    user = await User.findById(creator)
+  }catch {
+    return  next( new HttpError("Creating place failed", 500))
+  }
+  if(!user){
+    return  next( new HttpError("Could not find user for provided id", 404))
+  }
+
   try {
-    await createdPlace.save();
+    const sess = await mongoose.startSession();
+    sess.startTransaction()
+    await createdPlace.save({session : sess});
+    user.places.push(createdPlace)
+    await user.save({session : sess});
+    await sess.commitTransaction()
+
   } catch (err) {
     return next(new HttpError("creating place failed, please try again.", 500));
   }
@@ -76,37 +65,47 @@ const getPlaceById = async (req, res, next) => {
     place = await Place.findById(placeId);
   } catch (err) {
     const error = next(new HttpError("Something went wrong.", 500));
-    return error
+    return error;
   }
 
   if (!place) {
-    const error = next(new HttpError("Could not find a place for provided id", 404)); //!throw for sync only
-    return error
+    const error = next(
+      new HttpError("Could not find a place for provided id", 404)
+    ); //!throw for sync only
+    return error;
   }
   res.json({ place: place.toObject({ getters: true }) }); //! {place} = {place:place}
 };
 
 const getPlacesByUserId = async (req, res, next) => {
   const userId = req.params.uid;
-  let places;
+  // let places;
+  let userWithPlaces;
   try {
-    places = await Place.find({ creator: userId });
+    userWithPlaces = await User.findById(userId).populate('places');
   } catch (err) {
-    return next(new HttpError("Something went wrong.", 500));
+    const error = new HttpError(
+      'Fetching places failed, please try again later.',
+      500
+    );
+    return next(error);
   }
 
-  if (!places.length) {
-    return next(new HttpError("Could not find places for provided id", 404)); // for async & sync
+  // if (!places || places.length === 0) {
+  if (!userWithPlaces || userWithPlaces.places.length === 0) {
+    return next(
+      new HttpError('Could not find places for the provided user id.', 404)
+    );
   }
   res.json({
-    places: places.map((place) => place.toObject({ getters: true })),
+    places: userWithPlaces.places.map((place) => place.toObject({ getters: true }))
   });
 };
 
 const updatePlaceById = async (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
-    throw new HttpError("Invalid inputs, please check again", 422);
+    return next(new HttpError("Invalid inputs, please check again", 422))
   }
   const placeId = req.params.pid;
   const { title, description } = req.body;
@@ -118,8 +117,10 @@ const updatePlaceById = async (req, res, next) => {
     return next(new HttpError("Something went wrong.", 500));
   }
   if (!place) {
-    const error = next(new HttpError("Could not find a place for provided id", 404)); //! this is for testing only
-    return error
+    const error = next(
+      new HttpError("Could not find a place for provided id", 404)
+    ); //! this is for testing only
+    return error;
   }
 
   place.title = title;
@@ -128,7 +129,9 @@ const updatePlaceById = async (req, res, next) => {
   try {
     await place.save();
   } catch (err) {
-    return next(new HttpError("upadating place failed, please try again.", 500));
+    return next(
+      new HttpError("upadating place failed, please try again.", 500)
+    );
   }
 
   res.status(200).json({ place: place.toObject({ getters: true }) });
@@ -139,7 +142,22 @@ const deletePlaceById = async (req, res, next) => {
 
   let place;
   try {
-    place = await Place.findByIdAndDelete(placeId);
+    place = await Place.findById(placeId).populate('creator');
+  } catch (err) {
+    return next(new HttpError("Something went wrong.", 500));
+  }
+  if(!place){
+    return  next( new HttpError("Could not find place for provided id", 404))
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction()
+    await place.deleteOne({session : sess});
+    place.creator.places.pull(place)
+    await place.creator.save({session : sess});
+    await sess.commitTransaction()
+
   } catch (err) {
     return next(new HttpError("Something went wrong.", 500));
   }
