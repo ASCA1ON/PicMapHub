@@ -11,11 +11,15 @@ import { useForm } from "../../shared/hooks/form-hook";
 
 import "./Auth.css";
 import { AuthContext } from "../../shared/context/auth-context";
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
+import ErrorModal from "../../shared/components/UIElements/ErrorModal";
 
 const Auth = () => {
-  const auth = useContext(AuthContext)
+  const auth = useContext(AuthContext);
 
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState();
 
   const [formState, inputHandler, setFormData] = useForm(
     {
@@ -31,11 +35,59 @@ const Auth = () => {
     false
   );
 
-  const authSubmitHandler = (event) => {
+  const authSubmitHandler = async (event) => {
     event.preventDefault();
-    console.log(formState);
-    auth.login()
+    setIsLoading(true)
+    if (isLogin) {
+      try {
+        const response = await fetch("http://localhost:5000/api/users/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formState.inputs.email.value,
+            password: formState.inputs.password.value,
+          }),
+        })
+        const responseData = await response.json()
+        if(!response.ok){
+          throw new Error(responseData.message)
+        }
+        setIsLoading(false)
+        auth.login();
+      } catch(err) {
+        console.log(err);
+        setIsLoading(false)
+        setError(err.message || 'something went wrong')
+      }
+    } else {
+      try {
+        const response = await fetch("http://localhost:5000/api/users/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formState.inputs.name.value,
+            email: formState.inputs.email.value,
+            password: formState.inputs.password.value,
+          }),
+        })
+        const responseData = await response.json()
+        if(!response.ok){
+          throw new Error(responseData.message)
+        }
+        setIsLoading(false)
+        auth.login();
+      } catch(err) {
+        console.log(err);
+        setIsLoading(false)
+        setError(err.message || 'something went wrong')
+      }
+    }
   };
+
   const switchHandler = () => {
     if (!isLogin) {
       setFormData(
@@ -60,10 +112,16 @@ const Auth = () => {
 
     setIsLogin((prev) => !prev);
   };
+  const errorHandler = ()=>{
+    setError(null)
+  }
 
   return (
+    <>
+    <ErrorModal error={error} onClear={errorHandler}/>
     <Card className="authentication">
-      <h2>Log in to PicMapHub</h2>
+      {isLoading && <LoadingSpinner asOverlay/>}
+      <h2>{isLogin?'Log in':'Sign up'} to PicMapHub</h2>
       <hr />
       <form className="place-for" onSubmit={authSubmitHandler}>
         {!isLogin && (
@@ -106,6 +164,7 @@ const Auth = () => {
         {!isLogin ? "Log in" : "Sign up"} on PicMapHub
       </Button>
     </Card>
+    </>
   );
 };
 
