@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import './Map.css';
 
@@ -16,13 +17,13 @@ const Map = props => {
         }),
       ],
       view: new window.ol.View({
-        center: window.ol.proj.fromLonLat([center.lng, center.lat]),
+        center: window.ol.proj.fromLonLat([parseFloat(center.lng), parseFloat(center.lat)]),
         zoom: zoom,
       }),
     });
 
     const marker = new window.ol.Feature({
-      geometry: new window.ol.geom.Point(window.ol.proj.fromLonLat([center.lng, center.lat])),
+      geometry: new window.ol.geom.Point(window.ol.proj.fromLonLat([parseFloat(center.lng), parseFloat(center.lat)])),
     });
 
     const markerStyle = new window.ol.style.Style({
@@ -67,15 +68,6 @@ export default Map;
 
 
 
-// import React, { useRef, useEffect } from 'react';
- 
-// import './Map.css';
- 
-// const Map = props => {
-//   const mapRef = useRef();
-  
-//   const { center, zoom } = props;
- 
 //   useEffect(() => {
 //     new window.ol.Map({
 //       target: mapRef.current.id,
@@ -91,15 +83,4 @@ export default Map;
 //     });
 //   }, [center, zoom]);
  
-//   return (
-//     <div
-//       ref={mapRef}
-//       className={`map ${props.className}`}
-//       style={props.style}
-//       id="map"
-//     ></div>
-//   );
-// };
- 
-// export default Map;
 

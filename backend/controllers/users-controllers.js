@@ -63,7 +63,7 @@ const login = async(req, res, next) => {
     return  next( new HttpError("Invalid email or password, please check again", 401))
   }
 
-  res.json({ message: "Logged in sucesssfully!" });
+  res.json({ message: "Logged in sucesssfully!", user: existingUser.toObject({ getters: true }) });
 };
 
 exports.getUsers = getUsers;

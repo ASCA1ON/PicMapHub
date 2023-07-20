@@ -1,42 +1,39 @@
-import React from "react";
-import {useParams} from 'react-router-dom'
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import PlaceList from "../components/PlaceList";
+import ErrorModal from "../../shared/components/UIElements/ErrorModal";
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
+import { useHttpClient } from "../../shared/hooks/http-hook";
 
-const dummy1 = []
-const dummy= [
-  {
-    id: "p1",
-    title: "Fushimi Inari-taisha",
-    description:
-      " head shrine of the kami Inari, located in Fushimi-ku, Kyoto, Kyoto Prefecture, Japan.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/c/c3/Kyoto_FushimiInari01.jpg",
-    address: "68 Fukakusa Yabunouchicho, Fushimi Ward, Kyoto, 612-0882, Japan",
-    location: {
-      lat: 34.967311625663136,
-      lng: 135.77265023990745,
-    },
-    creator: "u1",
-  },
-  {
-    id: "p2",
-    title: "Fushimi Inari-taisha",
-    description:
-      " head shrine of the kami Inari, located in Fushimi-ku, Kyoto, Kyoto Prefecture, Japan.",
-    imageUrl:
-      "https://dskyoto.s3.amazonaws.com/gallery/full/8514/5559/7797/08-20131216_FushimiInari_Mainspot-307.jpg",
-    address: "68 Fukakusa Yabunouchicho, Fushimi Ward, Kyoto, 612-0882, Japan",
-    location: {
-      lat: 34.9671402,
-      lng: 135.770483,
-    },
-    creator: "u1",
-  },
-];
 function UserPlaces() {
-    const userId = useParams().userId;
-    const loadedPlaces =dummy.filter(place => place.creator === userId)
-  return <PlaceList items={loadedPlaces} />;
+  const userId = useParams().userId;
+  const [loadedPlaces, setLoadedPlaces] = useState();
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPlaces = async () => {
+      try {
+        const responseData = await sendRequest(
+          `http://localhost:5000/api/places/user/${userId}`
+        );
+        setLoadedPlaces(responseData.places);
+      } catch (err) {}
+    };
+    fetchPlaces();
+  }, [sendRequest, userId]);
+
+  return (
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      {isLoading && (
+        <div className="center">
+          <LoadingSpinner />
+        </div>
+      )}
+      {!isLoading && loadedPlaces && <PlaceList items={loadedPlaces} />}
+    </>
+  );
 }
 
 export default UserPlaces;
