@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Input from "../../shared/components/FormElements/Input";
 import Button from "../../shared/components/FormElements/Button";
 import {
@@ -8,44 +8,18 @@ import {
   VALIDATOR_REQUIRE,
 } from "../../shared/util/validators";
 import { useForm } from "../../shared/hooks/form-hook";
+import { useHttpClient } from "../../shared/hooks/http-hook";
+import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
+import ErrorModal from "../../shared/components/UIElements/ErrorModal";
+import Card from "../../shared/components/UIElements/Card";
+import { AuthContext } from "../../shared/context/auth-context";
 
 import "./PlaceForm.css";
-import Card from "../../shared/components/UIElements/Card";
-
-const dummy = [
-  {
-    id: "p1",
-    title: "Fushimi Inari-taisha",
-    description:
-      " head shrine of the kami Inari, located in Fushimi-ku, Kyoto, Kyoto Prefecture, Japan.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/c/c3/Kyoto_FushimiInari01.jpg",
-    address: "68 Fukakusa Yabunouchicho, Fushimi Ward, Kyoto, 612-0882, Japan",
-    location: {
-      lat: 34.967311625663136,
-      lng: 135.77265023990745,
-    },
-    creator: "u1",
-  },
-  {
-    id: "p2",
-    title: "Fushimi Inari-taisha",
-    description:
-      " head shrine of the kami Inari, located in Fushimi-ku, Kyoto, Kyoto Prefecture, Japan.",
-    imageUrl:
-      "https://dskyoto.s3.amazonaws.com/gallery/full/8514/5559/7797/08-20131216_FushimiInari_Mainspot-307.jpg",
-    address: "68 Fukakusa Yabunouchicho, Fushimi Ward, Kyoto, 612-0882, Japan",
-    location: {
-      lat: 34.9671402,
-      lng: 135.770483,
-    },
-    creator: "u1",
-  },
-];
 
 const UpdatePlace = () => {
-  const [loading, setloading] = useState(true);
-
+  const auth = useContext(AuthContext)
+  const { isLoading, error, sendRequest, clearError } = useHttpClient();
+  const [loadedPlace, setLoadedPlace] = useState();
   const placeId = useParams().placeId;
 
   const [formState, inputHandler, setFormData] = useForm(
@@ -61,34 +35,60 @@ const UpdatePlace = () => {
     },
     false
   );
+  const navigate = useNavigate();
 
-  const identifiedPlace = dummy.find((p) => p.id === placeId);
 
   useEffect(() => {
-    if (identifiedPlace) {
-      setFormData(
-        {
-          title: {
-            value: identifiedPlace.title,
-            isValid: true,
+    const fetchPlaces = async () => {
+      try {
+        const responseData = await sendRequest(
+          `http://localhost:5000/api/places/${placeId}`
+        );
+        setLoadedPlace(responseData.place);
+        setFormData(
+          {
+            title: {
+              value: responseData.place.title,
+              isValid: true,
+            },
+            description: {
+              value: responseData.place.description,
+              isValid: true,
+            },
           },
-          description: {
-            value: identifiedPlace.description,
-            isValid: true,
-          },
-        },
-        true
-      );
-      setloading(false);
-    }
-  }, [setFormData, identifiedPlace]);
+          true
+        );
+      } catch (err) {}
+    };
+    fetchPlaces();
+  }, [sendRequest, placeId, setFormData]);
 
-  const updatePlaceSubmitHandler = (event) => {
+  const updatePlaceSubmitHandler = async (event) => {
     event.preventDefault();
-    console.log(formState.inputs);
+    try {
+      await sendRequest(
+        `http://localhost:5000/api/places/${placeId}`,
+        "PATCH",
+        JSON.stringify({
+          title: formState.inputs.title.value,
+          description: formState.inputs.description.value,
+        }),
+        { "Content-Type": "application/json" }
+      );
+      navigate('/'+auth.userId+'/places')
+    } catch (err) {}
+
+
   };
 
-  if (!identifiedPlace) {
+  if (isLoading) {
+    return (
+      <div className="center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+  if (!loadedPlace && !error) {
     return (
       <div className="center">
         <Card>
@@ -97,43 +97,37 @@ const UpdatePlace = () => {
       </div>
     );
   }
-  if (loading) {
-    return (
-      <div className="center">
-        <Card>
-        <h2>Loding...</h2>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <form className="place-form" onSubmit={updatePlaceSubmitHandler}>
-      <Input
-        id="title"
-        element="input"
-        type="text"
-        label="Title"
-        validators={[VALIDATOR_REQUIRE()]}
-        errorText="Please enter valid title (title cannot be empty)"
-        onInput={inputHandler}
-        initialValue={formState.inputs.title.value}
-        initialValid={formState.inputs.title.isValid}
-      />
-      <Input
-        id="description"
-        element="textarea"
-        label="Description"
-        validators={[VALIDATOR_MINLENGTH(5), VALIDATOR_MAXLENGTH(5000)]}
-        errorText="Please enter valid description"
-        onInput={inputHandler}
-        initialValue={formState.inputs.description.value}
-        initialValid={formState.inputs.description.isValid}
-      />
-      <Button type="submit" disabled={!formState.isValid}>
-        Update place
-      </Button>
-    </form>
+    <>
+      <ErrorModal error={error} onClear={clearError} />
+      {!isLoading && loadedPlace && <form className="place-form" onSubmit={updatePlaceSubmitHandler}>
+        <Input
+          id="title"
+          element="input"
+          type="text"
+          label="Title"
+          validators={[VALIDATOR_REQUIRE()]}
+          errorText="Please enter valid title (title cannot be empty)"
+          onInput={inputHandler}
+          initialValue={loadedPlace.title}
+          initialValid={true}
+        />
+        <Input
+          id="description"
+          element="textarea"
+          label="Description"
+          validators={[VALIDATOR_MINLENGTH(5), VALIDATOR_MAXLENGTH(5000)]}
+          errorText="Please enter valid description"
+          onInput={inputHandler}
+          initialValue={loadedPlace.description}
+          initialValid={true}
+        />
+        <Button type="submit" disabled={!formState.isValid}>
+          Update place
+        </Button>
+      </form>}
+    </>
   );
 };
 

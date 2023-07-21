@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import PlaceList from "../components/PlaceList";
 import ErrorModal from "../../shared/components/UIElements/ErrorModal";
 import LoadingSpinner from "../../shared/components/UIElements/LoadingSpinner";
@@ -9,7 +9,6 @@ function UserPlaces() {
   const userId = useParams().userId;
   const [loadedPlaces, setLoadedPlaces] = useState();
   const { isLoading, error, sendRequest, clearError } = useHttpClient();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPlaces = async () => {
@@ -23,6 +22,10 @@ function UserPlaces() {
     fetchPlaces();
   }, [sendRequest, userId]);
 
+  const placeDeletehandler = (deletedPlaceId)=>{
+    setLoadedPlaces(prevPlace=> prevPlace.filter(place=> place.id!== deletedPlaceId))
+  }
+
   return (
     <>
       <ErrorModal error={error} onClear={clearError} />
@@ -31,7 +34,7 @@ function UserPlaces() {
           <LoadingSpinner />
         </div>
       )}
-      {!isLoading && loadedPlaces && <PlaceList items={loadedPlaces} />}
+      {!isLoading && loadedPlaces && <PlaceList items={loadedPlaces} onDeletePlace={placeDeletehandler}/>}
     </>
   );
 }
