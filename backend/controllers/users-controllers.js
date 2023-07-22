@@ -36,7 +36,7 @@ const singup = async (req, res, next) => {
   const createdUser = new User({
     name, //! name:name
     email,
-    image:"https://upload.wikimedia.org/wikipedia/commons/c/c3/Kyoto_FushimiInari01.jpg",
+    image:req.file.path, //! or save full path 'http://loc... linked in userItem fe
     password,
     places:[]
   });

@@ -1,3 +1,4 @@
 /node_modules
 /testdata.txt
 /.env
+uploads/images/*
