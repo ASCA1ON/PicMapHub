@@ -76,7 +76,7 @@ const login = async (req, res, next) => {
   }
 
   if (!existingUser) {
-    return next(new HttpError("Invalid email, please check again", 401));
+    return next(new HttpError("Invalid email, please check again", 403));
   }
   let isPwdChk = false;
   try {
@@ -86,7 +86,7 @@ const login = async (req, res, next) => {
   }
 
   if (!isPwdChk) {
-    return next(new HttpError("Invalid password, please check again", 401));
+    return next(new HttpError("Invalid password, please check again", 403));
   }
 
   let token;
