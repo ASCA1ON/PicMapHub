@@ -7,7 +7,6 @@ const HttpError = require("../model/http-error");
 const getCoordFromAddress = require("./util/location");
 const Place = require("../model/place");
 const User = require("../model/user");
-const { log } = require("console");
 
 const createPlace = async (req, res, next) => {
   const error = validationResult(req);
@@ -169,7 +168,7 @@ const deletePlaceById = async (req, res, next) => {
   }
   
   fs.unlink(imagePath, err =>{
-    console.log(err);
+    // console.log(err);
   })
   
   res.status(200).json({ message: "Place Deleted" });
