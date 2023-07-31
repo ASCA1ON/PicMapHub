@@ -58,7 +58,7 @@ const singup = async (req, res, next) => {
   }
   let token;
   try {
-    token = jwt.sign({ userId: createdUser.id, email: createdUser.email }, 'this_is_a_sceret',{expiresIn:'1h'});
+    token = jwt.sign({ userId: createdUser.id, email: createdUser.email }, process.env.JWT_SECRET,{expiresIn:'1h'});
   } catch (err) {
     return next(new HttpError("Signing up failed, please try again.", 500));
   }
@@ -91,7 +91,7 @@ const login = async (req, res, next) => {
 
   let token;
   try {
-    token = jwt.sign({ userId: existingUser.id, email: existingUser.email }, 'this_is_a_sceret',{expiresIn:'1h'});
+    token = jwt.sign({ userId: existingUser.id, email: existingUser.email }, process.env.JWT_SECRET,{expiresIn:'1h'});
   } catch (err) {
     return next(new HttpError("Logging in failed, please try again", 500));
   }

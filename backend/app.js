@@ -1,9 +1,9 @@
+require('dotenv').config();
 const fs = require("fs")
 const path = require("path")
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-require('dotenv').config();
 
 const HttpError = require("./model/http-error");
 const placeRoutes = require("./routes/places-routes");
