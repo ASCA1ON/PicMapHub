@@ -1,26 +1,63 @@
 const axios = require("axios");
 const HttpError = require("../../model/http-error");
+const Nominatim = require("nominatim-geocoder");
 
 async function getCoordFromAddress(address) {
-  const response = await axios.get(
-    `https://nominatim.openstreetmap.org/search/${encodeURIComponent(
-      address
-    )}?format=json&limit=1&polygon_svg=1`
-  );
+  //! original code api issues
+  // const response = await axios.get(
+  //   `https://nominatim.openstreetmap.org/search/${encodeURIComponent(
+  //     address
+  //   )}?format=json&limit=1&polygon_svg=1`
+  // );
+  //   const data = response.data;
 
+  //   if(!data.length) {
+  //     const error = new HttpError("Could not find location for this address",422);
+  //     throw error;
+  // };
 
-  const data = response.data;
+  // const coordiantes = {
+  //     lat: data[0].lat,
+  //     lng: data[0].lon,
+  //   };
 
-  if(!data.length) {
-    const error = new HttpError("Could not find location for this address",422);
-    throw error;
-};
+  //! alternative
+  // const formatted = address.replace(/, | /g, "+");
 
-const coordiantes = {
-    lat: data[0].lat,
-    lng: data[0].lon,
+  // requestUrl = `https://nominatim.openstreetmap.org/?addressdetails=1&q=${formatted}&format=json&limit=1`
+  // const response = await axios.get(requestUrl);
+  //   try {
+  //     const response = await axios.get(requestUrl);
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw new Error('API request failed');
+  //   }
+
+  const geocoder = new Nominatim();
+
+  async function search(query) {
+    try {
+      const response = await geocoder.search({ q: query });
+      return response;
+    } catch (error) {
+      throw new HttpError(error+ ' location api issues');
+    }
+  }
+
+  const response = await search(address);
+
+    const data = response;
+
+    if(!data.length) {
+      const error = new HttpError("Could not find location for this address",422);
+      throw error;
   };
 
-  return coordiantes
-};
-module.exports = getCoordFromAddress
+  const coordiantes = {
+      lat: data[0].lat,
+      lng: data[0].lon,
+    };
+
+  return coordiantes;
+}
+module.exports = getCoordFromAddress;
